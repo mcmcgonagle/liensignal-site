@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LienSignal — NH Distressed Property Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1a14;
+    --paper: #f4f0e8;
+    --moss: #2d4a35;
+    --pine: #1a3222;
+    --gold: #c8922a;
+    --gold-light: #e8b84b;
+    --rust: #8b3a2a;
+    --mist: #e8e4dc;
+    --signal-high: #8b3a2a;
+    --signal-watch: #c8922a;
+    --signal-monitor: #2d4a35;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ── HEADER BAR ── */
+  .topbar {
+    background: var(--pine);
+    color: var(--paper);
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    border-bottom: 2px solid var(--gold);
+  }
+  .topbar-left { opacity: 0.7; }
+  .topbar-right { color: var(--gold-light); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--pine);
+    color: var(--paper);
+    padding: 80px 40px 90px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: 'NH';
+    position: absolute;
+    right: -20px;
+    top: -40px;
+    font-family: 'Playfair Display', serif;
+    font-size: 320px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.03);
+    pointer-events: none;
+    line-height: 1;
+  }
+
+  .hero-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(42px, 6vw, 72px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+    color: var(--paper);
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--gold-light);
+    display: block;
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    line-height: 1.65;
+    max-width: 580px;
+    opacity: 0.82;
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+
+  /* ── EMAIL FORM ── */
+  .form-wrap {
+    display: flex;
+    gap: 0;
+    max-width: 500px;
+    border: 1.5px solid var(--gold);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .form-wrap input[type="email"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 16px 20px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    color: var(--paper);
+    outline: none;
+  }
+
+  .form-wrap input[type="email"]::placeholder { color: rgba(244,240,232,0.35); }
+
+  .form-wrap button {
+    background: var(--gold);
+    color: var(--pine);
+    border: none;
+    padding: 16px 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .form-wrap button:hover { background: var(--gold-light); }
+
+  .form-note {
+    margin-top: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(244,240,232,0.4);
+    letter-spacing: 0.05em;
+  }
+  .form-note strong { color: var(--gold-light); font-weight: 500; }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    background: var(--gold);
+    padding: 18px 40px;
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+    color: var(--pine);
+  }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    display: block;
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 80px 40px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 24px;
+    color: var(--pine);
+  }
+
+  .section-body {
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 640px;
+    color: #3a4a3f;
+  }
+
+  /* ── PROBLEM SECTION ── */
+  .problem-section {
+    background: var(--mist);
+    border-top: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+  }
+
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    margin-top: 48px;
+    background: var(--ink);
+    border: 2px solid var(--ink);
+  }
+
+  .problem-card {
+    background: var(--paper);
+    padding: 32px 28px;
+  }
+
+  .problem-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--mist);
+    line-height: 1;
+    margin-bottom: 8px;
+    -webkit-text-stroke: 1.5px var(--ink);
+  }
+
+  .problem-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: var(--pine);
+  }
+
+  .problem-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #4a5a4f;
+  }
+
+  /* ── SIGNAL SECTION ── */
+  .signals-section { background: var(--paper); }
+
+  .signal-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 40px;
+    font-size: 14px;
+  }
+
+  .signal-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    background: var(--pine);
+    color: var(--paper);
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .signal-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--mist);
+    border-right: 1px solid var(--mist);
+    vertical-align: top;
+  }
+
+  .signal-table tr:hover td { background: var(--mist); }
+
+  .signal-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--pine);
+  }
+
+  .signal-lead {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* ── COMPOUND FLAG CALLOUT ── */
+  .compound-callout {
+    background: var(--pine);
+    color: var(--paper);
+    padding: 40px 48px;
+    margin-top: 48px;
+    border-left: 6px solid var(--gold);
+    position: relative;
+  }
+
+  .compound-callout::before {
+    content: '⚑';
+    position: absolute;
+    right: 40px;
+    top: 32px;
+    font-size: 48px;
+    opacity: 0.15;
+  }
+
+  .compound-callout h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 12px;
+  }
+
+  .compound-callout p {
+    font-size: 16px;
+    line-height: 1.65;
+    max-width: 600px;
+    opacity: 0.9;
+  }
+
+  /* ── WHAT YOU GET ── */
+  .deliverables-section { background: var(--ink); color: var(--paper); }
+  .deliverables-section .section-label { color: var(--gold-light); }
+  .deliverables-section h2 { color: var(--paper); }
+
+  .deliverables-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-top: 48px;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .deliverable {
+    background: var(--ink);
+    padding: 36px 32px;
+    border: 1px solid rgba(255,255,255,0.07);
+    transition: border-color 0.2s;
+  }
+  .deliverable:hover { border-color: var(--gold); }
+
+  .deliverable-icon {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .deliverable-icon::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .deliverable h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    margin-bottom: 14px;
+    color: var(--paper);
+  }
+
+  .deliverable ul {
+    list-style: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(244,240,232,0.7);
+  }
+
+  .deliverable ul li {
+    padding: 5px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .deliverable ul li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-size: 12px;
+  }
+
+  /* ── VS COMPARISON ── */
+  .compare-section { background: var(--mist); }
+
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 40px;
+    font-size: 14px;
+  }
+
+  .compare-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px 18px;
+    text-align: center;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .compare-table th:first-child { text-align: left; }
+  .compare-table th:last-child { background: var(--pine); color: var(--paper); }
+
+  .compare-table td {
+    padding: 13px 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .compare-table td:first-child { text-align: left; font-weight: 400; }
+  .compare-table td:last-child { background: rgba(45,74,53,0.07); font-weight: 500; color: var(--pine); }
+
+  .check { color: var(--signal-monitor); font-size: 16px; }
+  .cross { color: #999; font-size: 14px; }
+  .highlight-col { background: rgba(45,74,53,0.05); }
+
+  /* ── PRICING ── */
+  .pricing-section { background: var(--paper); }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 48px;
+    max-width: 700px;
+  }
+
+  .price-card {
+    border: 2px solid var(--ink);
+    padding: 36px 32px;
+    position: relative;
+  }
+
+  .price-card.featured {
+    background: var(--pine);
+    color: var(--paper);
+    border-color: var(--pine);
+  }
+
+  .price-badge {
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    background: var(--gold);
+    color: var(--pine);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    font-weight: 500;
+  }
+
+  .price-tier {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+
+  .price-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .price-card.featured .price-amount { color: var(--gold-light); }
+
+  .price-period {
+    font-size: 13px;
+    opacity: 0.5;
+    margin-bottom: 24px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .price-features {
+    list-style: none;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .price-features li { padding-left: 18px; position: relative; }
+  .price-features li::before { content: '✓'; position: absolute; left: 0; color: var(--gold); font-size: 12px; }
+  .price-card.featured .price-features li::before { color: var(--gold-light); }
+
+  .price-note {
+    margin-top: 32px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    opacity: 0.55;
+    line-height: 1.5;
+  }
+
+  /* ── FAQ ── */
+  .faq-section { background: var(--mist); border-top: 2px solid var(--ink); }
+
+  .faq-list { margin-top: 40px; }
+
+  .faq-item {
+    border-bottom: 1px solid rgba(0,0,0,0.12);
+    padding: 28px 0;
+  }
+
+  .faq-q {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--pine);
+    margin-bottom: 12px;
+  }
+
+  .faq-a {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #4a5a4f;
+    max-width: 620px;
+  }
+
+  /* ── ABOUT ── */
+  .about-section { background: var(--paper); }
+
+  .about-card {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    max-width: 700px;
+  }
+
+  .about-accent {
+    width: 3px;
+    height: 80px;
+    background: var(--gold);
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .about-text { font-size: 16px; line-height: 1.75; color: #3a4a3f; }
+  .about-text strong { color: var(--pine); font-weight: 500; }
+
+  /* ── BOTTOM CTA ── */
+  .bottom-cta {
+    background: var(--pine);
+    color: var(--paper);
+    text-align: center;
+    padding: 80px 40px;
+    border-top: 4px solid var(--gold);
+  }
+
+  .bottom-cta h2 {
+    color: var(--paper);
+    margin-bottom: 12px;
+  }
+
+  .bottom-cta p {
+    font-size: 16px;
+    opacity: 0.7;
+    margin-bottom: 40px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  .bottom-cta .form-wrap {
+    display: inline-flex;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: rgba(244,240,232,0.4);
+    padding: 24px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  footer a { color: var(--gold); text-decoration: none; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-inner > * {
+    animation: fadeUp 0.7s ease forwards;
+    opacity: 0;
+  }
+  .hero-inner > *:nth-child(1) { animation-delay: 0.1s; }
+  .hero-inner > *:nth-child(2) { animation-delay: 0.25s; }
+  .hero-inner > *:nth-child(3) { animation-delay: 0.4s; }
+  .hero-inner > *:nth-child(4) { animation-delay: 0.55s; }
+  .hero-inner > *:nth-child(5) { animation-delay: 0.65s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .topbar { display: none; }
+    .hero { padding: 60px 24px 70px; }
+    .section { padding: 60px 24px; }
+    .problem-grid { grid-template-columns: 1fr; }
+    .deliverables-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .stats-strip { gap: 32px; padding: 18px 24px; }
+    .form-wrap { flex-direction: column; }
+    .form-wrap button { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-left">LIENSIGNAL — NH DISTRESSED PROPERTY INTELLIGENCE</span>
+  <span class="topbar-right">FOUNDING RATE: $49/mo — FIRST 20 SUBSCRIBERS ONLY</span>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Early Access — New Hampshire</div>
+    <h1>
+      Know Before<br>
+      <em>The Auction List Does.</em>
+    </h1>
+    <p class="hero-sub">
+      Tax liens. Lis pendens. Probate filings. Scraped daily from all 10 NH county registries, aggregated into one weekly intelligence digest — with compound signal flagging that no national tool offers.
+    </p>
+    <form class="form-wrap" action="https://buttondown.com/api/emails/embed-subscribe/liensignal" method="post">
+      <input type="email" name="email" id="bd-email" placeholder="your@email.com" required>
+      <input type="hidden" value="1" name="embed" />
+      <button type="submit">Get Early Access</button>
+    </form>
+    <p class="form-note">
+      <strong>$49/mo founding rate</strong> — locked for life for the first 20 subscribers. No card required to join the list.
+    </p>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat">
+    <span class="stat-num">10</span>
+    <span class="stat-label">NH Counties Covered</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">Daily</span>
+    <span class="stat-label">Scrape Frequency</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">3–6 mo</span>
+    <span class="stat-label">Before Auction Listing</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">$49</span>
+    <span class="stat-label">Founding Rate</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem-section">
+  <div class="section">
+    <div class="section-label">The Problem</div>
+    <h2>The data exists. It's just impossible to use.</h2>
+    <p class="section-body">New Hampshire's distressed property filings are public record — but scattered across 10 different county portals with inconsistent formats, no search aggregation, and no way to know when the same property shows up in multiple systems.</p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-num">10</div>
+        <div class="problem-title">Separate County Portals</div>
+        <div class="problem-body">Hillsborough, Rockingham, Merrimack, Strafford, Grafton, Belknap, Carroll, Cheshire, Sullivan, Coos — each with its own interface and format.</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-num">3–5</div>
+        <div class="problem-title">Hours Per Week, Manually</div>
+        <div class="problem-body">What serious investors spend checking county portals every week — or pay a VA to do it for them. And they're still only seeing one county at a time.</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-num">Weeks</div>
+        <div class="problem-title">Behind on National Tools</div>
+        <div class="problem-body">PropStream and ATTOM pull from aggregators, not county registries. By the time a lis pendens appears in their database, your competition has already made contact.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SIGNALS -->
+<section class="signals-section">
+  <div class="section">
+    <div class="section-label">What We Track</div>
+    <h2>Four signal types. All 10 counties. Every day.</h2>
+
+    <table class="signal-table">
+      <thead>
+        <tr>
+          <th>Signal Type</th>
+          <th>What It Means</th>
+          <th>Lead Time vs. Auction</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="signal-name">Lis Pendens</span></td>
+          <td>Lender has initiated foreclosure proceedings</td>
+          <td><span class="signal-lead">3–6 months early</span></td>
+          <td>County Registry of Deeds</td>
+        </tr>
+        <tr>
+          <td><span class="signal-name">Tax Liens</span></td>
+          <td>Owner is delinquent on property taxes</td>
+          <td><span class="signal-lead">1–3 months early</span></td>
+          <td>County Registry of Deeds</td>
+        </tr>
+        <tr>
+          <td><span class="signal-name">Probate Filings</span></td>
+          <td>Owner deceased, estate being administered</td>
+          <td><span class="signal-lead">Variable — often months</span></td>
+          <td>NH Circuit Court</td>
+        </tr>
+        <tr>
+          <td><span class="signal-name">Foreclosure Deeds</span></td>
+          <td>Bank took the property at auction</td>
+          <td>Post-auction</td>
+          <td>County Registry of Deeds</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="compound-callout">
+      <h3>The Compound Signal Edge</h3>
+      <p>A property with both a tax lien <em>and</em> a lis pendens filed within 90 days is a high-probability distressed situation. This tool scores every property 0–10 based on signal combinations — and surfaces the highest-conviction flags first in your weekly digest. That compound logic is impossible to replicate without aggregating all 10 county systems simultaneously.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DELIVERABLES -->
+<section class="deliverables-section">
+  <div class="section">
+    <div class="section-label">What You Get</div>
+    <h2>One subscription. Two ways to access the intelligence.</h2>
+
+    <div class="deliverables-grid">
+      <div class="deliverable">
+        <div class="deliverable-icon">Weekly Digest</div>
+        <h3>Monday 7am Email</h3>
+        <ul>
+          <li>All HIGH PRIORITY flags from the past 7 days</li>
+          <li>Address, county, signal types, assessed value, last sale</li>
+          <li>New filings organized by county with source links</li>
+          <li>"NEW THIS WEEK" badge on fresh entries</li>
+          <li>County activity summary and trend callout</li>
+        </ul>
+      </div>
+      <div class="deliverable">
+        <div class="deliverable-icon">Dashboard</div>
+        <h3>Always-On Web Access</h3>
+        <ul>
+          <li>Filter by county, signal type, date range, score</li>
+          <li>Property detail: full filing history + assessor data</li>
+          <li>Google Maps link and source document access</li>
+          <li>CSV export any filtered view</li>
+          <li>Magic link login — no password required</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="compare-section">
+  <div class="section">
+    <div class="section-label">How It Compares</div>
+    <h2>The national players don't serve this market.</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Monthly Cost</th>
+          <th>NH Freshness</th>
+          <th>Compound Signals</th>
+          <th>LienSignal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PropStream</td>
+          <td>$99–$399</td>
+          <td><span class="cross">Weeks stale</span></td>
+          <td><span class="cross">✕</span></td>
+          <td><span class="check">✓ Daily + flags</span></td>
+        </tr>
+        <tr>
+          <td>ATTOM Data</td>
+          <td>$300–$500+</td>
+          <td><span class="cross">Weeks stale</span></td>
+          <td><span class="cross">✕</span></td>
+          <td><span class="check">✓ 10x cheaper</span></td>
+        </tr>
+        <tr>
+          <td>BatchLeads</td>
+          <td>$97–$397</td>
+          <td><span class="cross">Variable</span></td>
+          <td><span class="cross">✕</span></td>
+          <td><span class="check">✓ NH-specific</span></td>
+        </tr>
+        <tr>
+          <td>Manual / VA</td>
+          <td>$0–$300+</td>
+          <td><span class="check">Real-time</span></td>
+          <td><span class="cross">✕ One county at a time</span></td>
+          <td><span class="check">✓ Save 3–5 hrs/week</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section">
+  <div class="section">
+    <div class="section-label">Pricing</div>
+    <h2>Simple. One tier. One decision.</h2>
+
+    <div class="pricing-grid">
+      <div class="price-card featured">
+        <div class="price-badge">Founding Rate</div>
+        <div class="price-tier">First 20 Subscribers</div>
+        <div class="price-amount">$49</div>
+        <div class="price-period">/month — locked for life</div>
+        <ul class="price-features">
+          <li>All 10 NH counties</li>
+          <li>Weekly email digest</li>
+          <li>Full dashboard access</li>
+          <li>CSV export</li>
+          <li>Compound signal scoring</li>
+          <li>Rate never increases</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Standard (After Launch)</div>
+        <div class="price-amount">$99</div>
+        <div class="price-period">/month</div>
+        <ul class="price-features">
+          <li>All 10 NH counties</li>
+          <li>Weekly email digest</li>
+          <li>Full dashboard access</li>
+          <li>CSV export</li>
+          <li>Compound signal scoring</li>
+        </ul>
+      </div>
+    </div>
+    <p class="price-note">Team / agency pricing available at $249–$399/month. Email for details.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="section">
+    <div class="section-label">Questions</div>
+    <h2>Common questions.</h2>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">What counties are covered?</div>
+        <div class="faq-a">All 10 NH counties: Hillsborough, Rockingham, Merrimack, Strafford, Grafton, Belknap, Carroll, Cheshire, Sullivan, and Coos. Every county registry of deeds, scraped daily.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How is this different from PropStream or ATTOM?</div>
+        <div class="faq-a">National tools pull from data aggregators that lag the actual county filings by days or weeks. This tool scrapes directly from NH county registries every day, so a lis pendens filed Monday is in your Tuesday inbox — not three weeks later. It also surfaces compound signals (multiple distress types on the same property within 90 days), which no national tool offers.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">When does it launch?</div>
+        <div class="faq-a">Joining the waitlist now locks in the $49/month founding rate. You'll be notified when the product is live. Founding subscribers get first access and the rate is locked permanently.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-section">
+  <div class="section">
+    <div class="section-label">Who Built This</div>
+    <h2>Built by an NH developer who got tired of doing this manually.</h2>
+    <div class="about-card">
+      <div class="about-accent"></div>
+      <p class="about-text">I'm a developer based in New Hampshire. I started pulling county registry data manually as a side project — checking Hillsborough, then Rockingham, then realizing there were eight more portals with no way to see across all of them at once. <strong>This tool is the thing I wanted to exist.</strong> It's NH-specific by design, maintained by someone who actually knows the market, and will never be a feature on a $400/month national platform.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BOTTOM CTA -->
+<section class="bottom-cta">
+  <h2>Get the intelligence. Before anyone else does.</h2>
+  <p>Join the waitlist and lock in the $49/month founding rate. First 20 subscribers only.</p>
+  <form class="form-wrap" action="https://buttondown.com/api/emails/embed-subscribe/liensignal" method="post">
+    <input type="email" name="email" id="bd-email-2" placeholder="your@email.com" required>
+    <input type="hidden" value="1" name="embed" />
+    <button type="submit">Get Early Access</button>
+  </form>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span>© 2026 LienSignal · liensignal.com</span>
+  <span>All data sourced from public NH county registries · <a href="#">Privacy</a></span>
+</footer>
+
+</body>
+</html>
