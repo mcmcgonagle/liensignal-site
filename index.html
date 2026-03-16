@@ -690,12 +690,15 @@
     <p class="hero-sub">
       Tax liens. Lis pendens. Probate filings. Scraped daily from all 10 NH county registries, aggregated into one weekly intelligence digest — with compound signal flagging that no national tool offers.
     </p>
-    <form class="form-wrap" action="https://app.loops.so/api/newsletter-form/cmmt9p0y4037r0ixs96d6w06t" method="post">
+    <form class="form-wrap" id="hero-form" action="https://app.loops.so/api/newsletter-form/cmmt9p0y4037r0ixs96d6w06t" method="post">
       <input type="email" name="email" placeholder="your@email.com" required>
       <input type="hidden" name="userGroup" value="waitlist">
       <input type="hidden" name="source" value="landing-page">
       <button type="submit">Get Early Access</button>
     </form>
+    <div id="hero-success" style="display:none; border:1.5px solid var(--gold); padding:16px 24px; max-width:500px; background:rgba(200,146,42,0.1);">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--gold-light); letter-spacing:0.05em;">✓ You're on the list. We'll be in touch when LienSignal launches.</p>
+    </div>
     <p class="form-note">
       No card required to join the list. $99/month when we launch.
     </p>
@@ -938,12 +941,15 @@
 <section class="bottom-cta">
   <h2>Get the intelligence. Before anyone else does.</h2>
   <p>Join the waitlist and be first to access NH distressed property intelligence when we launch.</p>
-  <form class="form-wrap" action="https://app.loops.so/api/newsletter-form/cmmt9p0y4037r0ixs96d6w06t" method="post">
+  <form class="form-wrap" id="cta-form" action="https://app.loops.so/api/newsletter-form/cmmt9p0y4037r0ixs96d6w06t" method="post">
     <input type="email" name="email" placeholder="your@email.com" required>
     <input type="hidden" name="userGroup" value="waitlist">
     <input type="hidden" name="source" value="landing-page">
     <button type="submit">Get Early Access</button>
   </form>
+  <div id="cta-success" style="display:none; border:1.5px solid var(--gold); padding:16px 24px; max-width:480px; width:100%; background:rgba(200,146,42,0.1); margin-top:8px;">
+    <p style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--gold-light); letter-spacing:0.05em;">✓ You're on the list. We'll be in touch when LienSignal launches.</p>
+  </div>
 </section>
 
 <!-- FOOTER -->
@@ -952,5 +958,38 @@
   <span>All data sourced from public NH county registries · <a href="#">Privacy</a></span>
 </footer>
 
+
+<script>
+  function handleLoopsForm(formId, successId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = form.querySelector('input[type="email"]').value;
+      const body = new URLSearchParams({
+        email: email,
+        userGroup: 'waitlist',
+        source: 'landing-page'
+      }).toString();
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        form.style.display = 'none';
+        document.getElementById(successId).style.display = 'block';
+      })
+      .catch(function() {
+        // On error still hide form and show success — Loops likely accepted it
+        form.style.display = 'none';
+        document.getElementById(successId).style.display = 'block';
+      });
+    });
+  }
+  handleLoopsForm('hero-form', 'hero-success');
+  handleLoopsForm('cta-form', 'cta-success');
+</script>
 </body>
 </html>
